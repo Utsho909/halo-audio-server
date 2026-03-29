@@ -26,15 +26,12 @@ function getAudioUrl(videoId) {
       const cookieContent = process.env.YOUTUBE_COOKIES.replace(/\\n/g, '\n');
       fs.writeFileSync(cookiesFile, cookieContent, 'utf8');
     }
-
-    const args = [
-      '--get-url',
-      // Try common audio itags directly: 251=opus webm, 140=m4a, 250/249=opus, then any audio
-      '--list-formats ',
-      '--no-warnings',
-      '--no-check-certificates',
-      '--geo-bypass',          // bypass geo-restrictions on Render's US IP
-    ];
+const args = [
+  '--get-url',
+  '--no-warnings',
+  '--no-check-certificates',
+  '--geo-bypass',
+];
 
     if (cookiesFile) {
       args.push('--cookies', cookiesFile);
