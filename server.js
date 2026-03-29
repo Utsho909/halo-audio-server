@@ -21,6 +21,9 @@ function getAudioUrl(videoId) {
       '-f', 'bestaudio[ext=m4a]/bestaudio/best',
       '--no-warnings',
       '--no-check-certificates',
+      // Use Android YouTube Music client — bypasses bot/sign-in checks on cloud IPs
+      '--extractor-args', 'youtube:player_client=android_music',
+      '--user-agent', 'com.google.android.apps.youtube.music/6.42.52 (Linux; U; Android 13) gzip',
       url
     ];
 
