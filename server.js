@@ -30,7 +30,7 @@ function getAudioUrl(videoId) {
     const args = [
       '--get-url',
       // Try common audio itags directly: 251=opus webm, 140=m4a, 250/249=opus, then any audio
-      '-f', '251/250/249/140/bestaudio',
+      '--list-formats ',
       '--no-warnings',
       '--no-check-certificates',
       '--geo-bypass',          // bypass geo-restrictions on Render's US IP
