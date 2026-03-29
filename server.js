@@ -27,10 +27,9 @@ function getAudioUrl(videoId) {
       fs.writeFileSync(cookiesFile, cookieContent, 'utf8');
     }
 const args = [
-  '-f', 'b', // or 'best'
+  '-f', 'bestaudio',
   '--get-url',
   '--no-warnings',
-  '--no-check-certificates',
   '--geo-bypass',
   '--cookies', '/tmp/yt_cookies.txt',
 ];
