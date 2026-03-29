@@ -1,0 +1,17 @@
+{
+  "name": "halo-audio-server",
+  "version": "1.0.0",
+  "description": "yt-dlp audio extraction proxy for Halo App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node scripts/download-ytdlp.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
