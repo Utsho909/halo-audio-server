@@ -22,7 +22,9 @@ function getAudioUrl(videoId) {
     if (process.env.YOUTUBE_COOKIES) {
       cookiesFile = path.join('/tmp', 'yt_cookies.txt');
       const fs = require('fs');
-      fs.writeFileSync(cookiesFile, process.env.YOUTUBE_COOKIES, 'utf8');
+      // Render stores multiline env vars with literal \n — replace them with real newlines
+      const cookieContent = process.env.YOUTUBE_COOKIES.replace(/\\n/g, '\n');
+      fs.writeFileSync(cookiesFile, cookieContent, 'utf8');
     }
 
     const args = [
