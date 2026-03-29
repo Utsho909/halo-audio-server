@@ -106,7 +106,12 @@ app.get('/stream', async (req, res) => {
   }
 });
 
-app.get('/ping', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
+app.get('/ping', (req, res) => res.json({
+  ok: true,
+  time: new Date().toISOString(),
+  cookies: process.env.YOUTUBE_COOKIES ? `✅ Loaded (${process.env.YOUTUBE_COOKIES.split('\n').length} lines)` : '❌ Not set'
+}));
+
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n✅ Halo Audio Server running on port ${PORT}`);
