@@ -4,85 +4,70 @@ const { execFile } = require('child_process');
 const path = require('path');
 const https = require('https');
 const http = require('http');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
-// yt-dlp binary path — the build script downloads it here
+// yt-dlp binary — downloaded by "npm run build" before startup
 const YTDLP_PATH = path.join(__dirname, 'bin', 'yt-dlp');
 
 function getAudioUrl(videoId) {
   return new Promise((resolve, reject) => {
     const url = `https://www.youtube.com/watch?v=${videoId}`;
-    execFile(YTDLP_PATH, [
+    const args = [
       '--get-url',
       '-f', 'bestaudio[ext=m4a]/bestaudio/best',
       '--no-warnings',
       '--no-check-certificates',
-      '--cookies-from-browser', 'chrome', // helps bypass age-gating if present
       url
-    ], { timeout: 30000 }, (err, stdout) => {
+    ];
+
+    console.log('Running yt-dlp:', YTDLP_PATH, args.join(' '));
+
+    execFile(YTDLP_PATH, args, { timeout: 30000 }, (err, stdout, stderr) => {
       if (err) {
-        // Retry without cookies on error
-        execFile(YTDLP_PATH, [
-          '--get-url',
-          '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-          '--no-warnings',
-          '--no-check-certificates',
-          url
-        ], { timeout: 30000 }, (err2, stdout2) => {
-          if (err2) return reject(err2);
-          const u = stdout2.trim().split('\n')[0];
-          if (!u) return reject(new Error('No URL returned'));
-          resolve(u);
-        });
-        return;
+        console.error('yt-dlp error:', err.message);
+        console.error('stderr:', stderr);
+        return reject(err);
       }
       const u = stdout.trim().split('\n')[0];
-      if (!u) return reject(new Error('No URL returned'));
+      if (!u) return reject(new Error('yt-dlp returned empty output'));
       resolve(u);
     });
   });
 }
 
-// /audio?id=VIDEO_ID — returns JSON with the stream URL
+// GET /audio?id=VIDEO_ID — returns JSON { url: "..." }
 app.get('/audio', async (req, res) => {
   const videoId = req.query.id;
-  console.log('🎵 Request for videoId:', videoId);
+  console.log('\n🎵 Audio request for:', videoId);
 
   if (!videoId || typeof videoId !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid video id' });
+    return res.status(400).json({ error: 'Missing video id' });
   }
 
   try {
     const streamUrl = await getAudioUrl(videoId.trim());
-    console.log('✅ Extracted URL:', streamUrl.substring(0, 80) + '...');
-
-    // Returned for clients that want to stream directly (mobile app)
+    console.log('✅ Got URL:', streamUrl.substring(0, 80) + '...');
     return res.json({ url: streamUrl });
   } catch (error) {
-    console.error('❌ yt-dlp Error:', error.message || error);
-    return res.status(500).json({ error: String(error.message || error) });
+    console.error('❌ Error:', error.message);
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// /stream?id=VIDEO_ID — streams (proxies) the audio bytes directly
-// Useful if your device cannot reach YouTube's CDN directly
+// GET /stream?id=VIDEO_ID — proxies the audio bytes
 app.get('/stream', async (req, res) => {
   const videoId = req.query.id;
-  if (!videoId || typeof videoId !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid video id' });
-  }
+  if (!videoId) return res.status(400).json({ error: 'Missing video id' });
 
   try {
     const streamUrl = await getAudioUrl(videoId.trim());
-
     const rangeHeader = req.headers['range'];
     const reqHeaders = {
-      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
       'Accept': '*/*',
       'Origin': 'https://www.youtube.com',
       'Referer': 'https://www.youtube.com/',
@@ -98,22 +83,19 @@ app.get('/stream', async (req, res) => {
       };
       if (upstream.headers['content-length']) resHeaders['Content-Length'] = upstream.headers['content-length'];
       if (upstream.headers['content-range']) resHeaders['Content-Range'] = upstream.headers['content-range'];
-
-      const status = (rangeHeader && upstream.statusCode === 206) ? 206 : 200;
-      res.writeHead(status, resHeaders);
+      res.writeHead((rangeHeader && upstream.statusCode === 206) ? 206 : 200, resHeaders);
       upstream.pipe(res);
     }).on('error', (e) => {
       if (!res.headersSent) res.status(500).json({ error: e.message });
     });
   } catch (error) {
-    if (!res.headersSent) res.status(500).json({ error: String(error.message || error) });
+    if (!res.headersSent) res.status(500).json({ error: error.message });
   }
 });
 
 app.get('/ping', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n======================================================`);
-  console.log(`✅ Halo Audio Server is running on port ${PORT}`);
-  console.log(`======================================================\n`);
+  console.log(`\n✅ Halo Audio Server running on port ${PORT}`);
+  console.log(`   yt-dlp path: ${YTDLP_PATH}`);
 });
