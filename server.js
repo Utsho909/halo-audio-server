@@ -29,7 +29,7 @@ function getAudioUrl(videoId) {
 
     const args = [
       '--get-url',
-      '-f', 'bestaudio[ext=m4a]/bestaudio/best',
+      '-f', 'bestaudio/best',
       '--no-warnings',
       '--no-check-certificates',
     ];
