@@ -27,12 +27,13 @@ function getAudioUrl(videoId) {
       fs.writeFileSync(cookiesFile, cookieContent, 'utf8');
     }
 const args = [
+  '-f', 'b', // or 'best'
   '--get-url',
   '--no-warnings',
   '--no-check-certificates',
   '--geo-bypass',
+  '--cookies', '/tmp/yt_cookies.txt',
 ];
-
     if (cookiesFile) {
       args.push('--cookies', cookiesFile);
     }
