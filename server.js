@@ -16,18 +16,28 @@ const YTDLP_PATH = path.join(__dirname, 'bin', 'yt-dlp');
 function getAudioUrl(videoId) {
   return new Promise((resolve, reject) => {
     const url = `https://www.youtube.com/watch?v=${videoId}`;
+
+    // Write cookies from env var to a temp file if available
+    let cookiesFile = null;
+    if (process.env.YOUTUBE_COOKIES) {
+      cookiesFile = path.join('/tmp', 'yt_cookies.txt');
+      const fs = require('fs');
+      fs.writeFileSync(cookiesFile, process.env.YOUTUBE_COOKIES, 'utf8');
+    }
+
     const args = [
       '--get-url',
       '-f', 'bestaudio[ext=m4a]/bestaudio/best',
       '--no-warnings',
       '--no-check-certificates',
-      // Use Android YouTube Music client — bypasses bot/sign-in checks on cloud IPs
-      '--extractor-args', 'youtube:player_client=android_music',
-      '--user-agent', 'com.google.android.apps.youtube.music/6.42.52 (Linux; U; Android 13) gzip',
-      url
     ];
 
-    console.log('Running yt-dlp:', YTDLP_PATH, args.join(' '));
+    if (cookiesFile) {
+      args.push('--cookies', cookiesFile);
+    }
+
+    args.push(url);
+    console.log('Running yt-dlp with args:', args.join(' '));
 
     execFile(YTDLP_PATH, args, { timeout: 30000 }, (err, stdout, stderr) => {
       if (err) {
